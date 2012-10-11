@@ -19,6 +19,8 @@ done
 
 Then you can
 
-   sbt test:run
+```
+sbt test:run
+```
 
-And you should see [this output](test-output.txt).
+And you should see [this output](https://raw.github.com/paulp/declosurify/master/test-output.txt).
