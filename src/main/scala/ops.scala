@@ -1,6 +1,6 @@
 package improving
 
 // TODO: constraints on Coll
-trait InfixMacroOps[T, Coll] extends Any {
+trait InfixMacroOps[A, Coll] extends Any {
   def xs: Coll
 }

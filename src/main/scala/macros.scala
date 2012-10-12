@@ -158,7 +158,7 @@ class ContextUtil[C <: Context](final val c: C) extends ReflectionSupport with M
 }
 
 object Impl {
-  def mapInfix[T: c0.WeakTypeTag, U: c0.WeakTypeTag, Coll: c0.WeakTypeTag, That: c0.WeakTypeTag](c0: CtxColl[T, Coll])(f0: c0.Expr[T => U]): c0.Expr[That] = {
+  def mapInfix[A: c0.WeakTypeTag, B: c0.WeakTypeTag, Coll: c0.WeakTypeTag, That: c0.WeakTypeTag](c0: CtxColl[A, Coll])(f0: c0.Expr[A => B]): c0.Expr[That] = {
     val ctx = new ContextUtil[c0.type](c0)
     import ctx._
     import c.universe._
@@ -169,7 +169,7 @@ object Impl {
     def isForeach         = weakTypeOf[That] =:= typeOf[Unit]
     def newBuilder        = weakTypeOf[Coll].typeSymbol.companionSymbol.typeSignature member 'newBuilder
     def closureDef        = c.Expr[Unit](closureTree)
-    def builderVal        = c.Expr[Unit](if (isForeach) mkUnit else ValDef(NoMods, 'buf, TypeTree(), newBuilder[U]))
+    def builderVal        = c.Expr[Unit](if (isForeach) mkUnit else ValDef(NoMods, 'buf, TypeTree(), newBuilder[B]))
     def mkCall(arg: Tree) = c.Expr[Unit](if (isForeach) closure(arg) else ('buf dot '+=)(closure(arg)))
     def mkResult          = c.Expr[That](if (isForeach) mkUnit else 'buf dot 'result)
 
@@ -192,7 +192,7 @@ object Impl {
     }
 
     def mkLinear(prefixTree: Tree): c.Expr[That] = {
-      val prefix    = c.Expr[Lin[T]](prefixTree)
+      val prefix    = c.Expr[Lin[A]](prefixTree)
       val call = mkCall('these dot 'head)
 
       reify {
@@ -208,7 +208,7 @@ object Impl {
     }
 
     def mkTraversable(prefixTree: Tree): c.Expr[That] = {
-      val prefix = c.Expr[Traversable[T]](prefixTree)
+      val prefix = c.Expr[Traversable[A]](prefixTree)
       val call   = mkCall('it dot 'next)
 
       reify {
@@ -223,16 +223,16 @@ object Impl {
     }
 
     c.prefix match {
-      case ArrayPrefix(tree)       => mkIndexed[Array[T]](tree)
-      case IndexedPrefix(tree)     => mkIndexed[Ind[T]](tree)
+      case ArrayPrefix(tree)       => mkIndexed[Array[A]](tree)
+      case IndexedPrefix(tree)     => mkIndexed[Ind[A]](tree)
       case LinearPrefix(tree)      => mkLinear(tree)
       case TraversablePrefix(tree) => mkTraversable(tree)
       case _                       => c.abort(c.enclosingPosition, "Not a Traversable: " + collectionType)
     }
   }
 
-  def foreachInfix[T: c0.WeakTypeTag, Coll: c0.WeakTypeTag](c0: CtxColl[T, Coll])(f0: c0.Expr[T => Unit]): c0.Expr[Unit] =
-    mapInfix[T, Unit, Coll, Unit](c0)(f0)
+  def foreachInfix[A: c0.WeakTypeTag, Coll: c0.WeakTypeTag](c0: CtxColl[A, Coll])(f0: c0.Expr[A => Unit]): c0.Expr[Unit] =
+    mapInfix[A, Unit, Coll, Unit](c0)(f0)
 }
 
 object MacroUtil {

@@ -4,23 +4,23 @@ import scala.collection.generic._
 import scala.collection.mutable.WrappedArray
 
 package improving {
-  // TODO - implicit evidence for Coll relating it to CC[T]
-  final class InfixMacroOpsImpl[T, Coll](val xs: Coll) extends InfixMacroOps[T, Coll] {
-    def macroMap[U](f0: T => U): Coll = macro Impl.mapInfix[T, U, Coll, Coll]
-    def macroForeach(f0: T => Unit): Unit = macro Impl.foreachInfix[T, Coll]
+  // TODO - implicit evidence for Coll relating it to CC[A]
+  final class InfixMacroOpsImpl[A, Coll](val xs: Coll) extends InfixMacroOps[A, Coll] {
+    def macroMap[B](f0: A => B): Coll = macro Impl.mapInfix[A, B, Coll, Coll]
+    def macroForeach(f0: A => Unit): Unit = macro Impl.foreachInfix[A, Coll]
   }
 }
 
 package object improving {
   type ClassTag[A]      = scala.reflect.ClassTag[A]
-  type Lin[+T]          = scala.collection.LinearSeq[T]
-  type Ind[+T]          = scala.collection.IndexedSeq[T]
+  type Lin[+A]          = scala.collection.LinearSeq[A]
+  type Ind[+A]          = scala.collection.IndexedSeq[A]
   type Ctx              = scala.reflect.macros.Context
-  type CtxCC[T, CC[_]]  = Context { type PrefixType = InfixMacroOps[T, CC[T]] }
-  type CtxColl[T, Coll] = Context { type PrefixType = InfixMacroOps[T, Coll] }
+  type CtxCC[A, CC[_]]  = Context { type PrefixType = InfixMacroOps[A, CC[A]] }
+  type CtxColl[A, Coll] = Context { type PrefixType = InfixMacroOps[A, Coll] }
 
-  implicit def mkArrayMacroOps[T](xs: Array[T]): InfixMacroOpsImpl[T, Array[T]] = new InfixMacroOpsImpl[T, Array[T]](xs)
-  implicit def mkInfixMacroOps[T, Coll](xs: Coll with TraversableOnce[T]): InfixMacroOpsImpl[T, Coll] = new InfixMacroOpsImpl[T, Coll](xs)
+  implicit def mkArrayMacroOps[A](xs: Array[A]): InfixMacroOpsImpl[A, Array[A]] = new InfixMacroOpsImpl[A, Array[A]](xs)
+  implicit def mkInfixMacroOps[A, Coll](xs: Coll with TraversableOnce[A]): InfixMacroOpsImpl[A, Coll] = new InfixMacroOpsImpl[A, Coll](xs)
 
   def numberThing(s: String): Int = try s.toDouble.toInt catch { case _: NumberFormatException => -1 }
   def ashow(xs: Array[_]) = println(xs mkString ", ")
