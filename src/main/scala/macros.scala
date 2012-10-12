@@ -12,6 +12,9 @@ trait ReflectionSupport {
   val u: Universe
   import u._
 
+  // Smuggled from the compiler.
+  val METHOD = (1L << 6).asInstanceOf[FlagSet]
+
   def mkUnit = Literal(Constant(()))
   def mkApply(x: scala.Symbol)(args: Tree*): Apply = Apply(x, args.toList)
   def flatten(t: Tree): List[Tree] = t match {
@@ -55,7 +58,7 @@ trait MacroSupport extends ReflectionSupport {
     """
   )
 
-  def freshName(prefix: String): TermName = c.enclosingUnit.freshTermName(prefix)
+  def freshName(prefix: String): TermName = newTermName(c.fresh(prefix))
   def enclClass = c.enclosingClass.symbol
   def enclMethod = c.enclosingMethod match {
     case null   =>
@@ -127,7 +130,7 @@ class ContextUtil[C <: Context](final val c: C) extends ReflectionSupport with M
   // [error]   at improving.Impl$.amapInfix(macros.scala:151)
   def newLocalMethod(name: TermName, paramTypes: List[Type], resultType: Type): MethodSymbol = {
     import build._
-    val ddef       = newNestedSymbol(enclMethod, name, enclMethod.pos, Flag.METHOD, isClass = false)
+    val ddef       = newNestedSymbol(enclMethod, name, enclMethod.pos, METHOD, isClass = false)
     val params     = paramTypes map (tpe =>
       setTypeSignature(
         newNestedSymbol(ddef, freshName("p"), ddef.pos, Flag.PARAM, isClass = false),
