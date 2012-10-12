@@ -2,12 +2,8 @@ name := "declosurify"
 
 organization := "org.improving"
 
-version := "0.1.1-SNAPSHOT"
+version := "0.1.1"
 
-scalaVersion := "2.10.0-SNAPSHOT"
-
-retrieveManaged := true
-
-resolvers += Resolver.sonatypeRepo("snapshots")
+scalaVersion := "2.10.0-RC1"
 
 libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
