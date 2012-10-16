@@ -21,3 +21,13 @@ object MooMoo extends App {
   h1 ; h2
   // r1 ; r2
 }
+
+
+import improving._
+import MacroUtil._
+
+object Moo {
+  def flatCollect(elems: List[Int]): Unit = {
+    showUs(elems macroForeach (x => println(x)))
+  }
+}
