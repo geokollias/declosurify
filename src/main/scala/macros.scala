@@ -1,49 +1,10 @@
 package improving
 
-import scala.language.experimental.macros
-import scala.reflect.macros.Context
-import scala.collection.TraversableLike
-import scala.collection.generic._
-import scala.collection.mutable.Builder
-import scala.reflect.api.Universe
-import scala.reflect.NameTransformer.{ encode => encodeName }
+import scala.collection.generic.FilterMonadic
 
-trait ReflectionSupport {
-  val u: Universe
+class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
+  val u: c.universe.type = c.universe
   import u._
-
-  // Smuggled from the compiler.
-  val METHOD = (1L << 6).asInstanceOf[FlagSet]
-
-  def mkUnit = Literal(Constant(()))
-  def mkApply(x: scala.Symbol)(args: Tree*): Apply = Apply(x, args.toList)
-  def flatten(t: Tree): List[Tree] = t match {
-    case Block(xs, expr) => xs :+ expr
-    case _               => t :: Nil
-  }
-
-  implicit final class TypeOps(val tp: Type) {
-    def typeArgs = tp match {
-      case TypeRef(_, _, args) => args
-      case _                   => Nil
-    }
-    def isLinearSeqType   = tp <:< typeOf[Lin[_]]
-    def isIndexedSeqType  = tp <:< typeOf[Ind[_]]
-    def isTraversableType = tp <:< typeOf[Traversable[_]]
-    def isArrayType       = tp <:< typeOf[Array[_]]
-
-    def orElse(alt: => Type): Type = if (tp eq NoType) alt else tp
-  }
-
-  implicit def optionTypeIsNoType(tp: Option[Type]): Type    = tp getOrElse NoType
-  implicit def optionSymIsNoSym(sym: Option[Symbol]): Symbol = sym getOrElse NoSymbol
-  implicit def symbolToTermName(x: scala.Symbol): TermName   = newTermName(encodeName(x.name))
-  implicit def symbolToIdent(x: scala.Symbol): Ident         = Ident(x: TermName)
-}
-
-trait MacroSupport extends ReflectionSupport {
-  val c: Context
-  import c.universe._
 
   def dumpContext(): Unit = println(
     s"""
@@ -54,12 +15,15 @@ trait MacroSupport extends ReflectionSupport {
       enclosingMethod    =${c.enclosingMethod}
       enclosingClass     =${c.enclosingClass}
       enclosingUnit      =${c.enclosingUnit}
-      enclosingRun       =${c.enclosingRun}
+      enclosingRun       =${/*c.enclosingRun*/ "run" }
     """
   )
 
   def freshName(prefix: String): TermName = newTermName(c.fresh(prefix))
-  def enclClass = c.enclosingClass.symbol
+  def enclClass: ClassSymbol = c.enclosingClass.symbol match {
+    case x: ModuleSymbol => x.moduleClass.asClass
+    case x: ClassSymbol  => x
+  }
   def enclMethod = c.enclosingMethod match {
     case null   =>
       c.warning(c.enclosingPosition, s"enclosingMethod is null, using $enclClass instead.")
@@ -67,16 +31,25 @@ trait MacroSupport extends ReflectionSupport {
       enclClass
     case m      => m.symbol
   }
-}
 
-class ContextUtil[C <: Context](final val c: C) extends ReflectionSupport with MacroSupport {
-  val u: c.universe.type = c.universe
-  import u._
+  private def logging = sys.props contains "declosurify.debug"
 
-  private def isMacroOpsImplicit(m: Symbol) = (
-       m.fullName == "improving.mkArrayMacroOps"
-    || m.fullName == "improving.mkInfixMacroOps"
-  )
+
+  def log(msg: String) = if (logging) Console.err.println(msg)
+  def log_?[T](value: T)(pf: PartialFunction[T, Any]): T = {
+    if (pf isDefinedAt value)
+      log("" + pf(value))
+
+    value
+  }
+
+  private def isMacroOpsImplicit(method: Symbol) = log_?(
+       method.producedType.isDefinedWithAnnotation[macroExtension]
+    && (method.producedType member 'xs) != NoSymbol
+  ) {
+    case false =>
+      ((method.producedType, method.producedType.isDefinedWithAnnotation[macroExtension], method.producedType member 'xs))
+  }
 
   lazy val collectionType: Type = Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
   lazy val elementType: Type    = Some(c.prefix.actualType.typeArgs) collect { case elem :: _ :: Nil => elem }
@@ -101,6 +74,14 @@ class ContextUtil[C <: Context](final val c: C) extends ReflectionSupport with M
   def prefixCollection[Coll1] = c.Expr[Coll1](prefixCollectionTree)
 
   def prefixCollectionTree = {
+    val m = methPart(c.prefix.tree)
+    println(s"""
+        |   pre: $m
+        |actual: ${c.prefix.actualType}
+        |static: ${c.prefix.staticType}
+        | first: ${m.tpe}
+      """.stripMargin.trim
+    )
     c.prefix.tree match {
       case Apply(sel, arg :: Nil) if isMacroOpsImplicit(sel.symbol) => arg
       case _                                                        => Apply(c.prefix.tree, Ident('xs) :: Nil)
@@ -128,116 +109,35 @@ class ContextUtil[C <: Context](final val c: C) extends ReflectionSupport with M
   // [error]   at improving.ContextUtil.functionToLocalMethod(macros.scala:80)
   // [error]   at improving.Impl$.amapImpl(macros.scala:187)
   // [error]   at improving.Impl$.amapInfix(macros.scala:151)
-  def newLocalMethod(name: TermName, paramTypes: List[Type], resultType: Type): MethodSymbol = {
+  def newLocalMethod(name: TermName, vparams: List[ValDef], resultType: Type): MethodSymbol = {
     import build._
-    val ddef       = newNestedSymbol(enclMethod, name, enclMethod.pos, METHOD, isClass = false)
-    val params     = paramTypes map (tpe =>
-      setTypeSignature(
-        newNestedSymbol(ddef, freshName("p"), ddef.pos, Flag.PARAM, isClass = false),
-        tpe
-      )
-    )
+    val ddef = newNestedSymbol(enclMethod, name, enclMethod.pos, Flag.PRIVATE | METHOD, isClass = false)
+    val params = vparams map { vd =>
+      val sym = newNestedSymbol(ddef, vd.name, ddef.pos, Flag.PARAM, isClass = false)
+      setTypeSignature(sym, vd.tpt.tpe)
+      vd setSymbol sym
+      sym
+    }
     setTypeSignature(ddef, MethodType(params, resultType)).asMethod
   }
 
   def functionToLocalMethod(fnTree: Function): DefDef = {
     val Function(fparams, fbody) = fnTree
-    val fsyms      = fparams map (_.symbol)
-    val ftypes     = fparams map (_.symbol.typeSignatureIn(c.enclosingClass.symbol.typeSignature))
-    val resultType = fbody.tpe
-    val ddef       = newLocalMethod(freshName("local"), ftypes, resultType)
-    val fbody1     = fbody.substituteSymbols(fsyms, ddef.paramss.head)
+    val frestpe = fbody.tpe
+    val fsyms   = fparams map (_.symbol)
+    val vparams = for (vd @ ValDef(mods, name, tpt, _) <- fparams) yield ValDef(mods, name, TypeTree(vd.symbol.typeSignature.normalize), EmptyTree)
+    val method  = newLocalMethod(freshName("local"), vparams, frestpe)
+    val tree    = DefDef(NoMods, freshName("local"), Nil, List(vparams), TypeTree(frestpe), c.resetAllAttrs(fbody.duplicate))
 
-    c.typeCheck(DefDef(ddef, fbody1)).asInstanceOf[DefDef]
+    tree setSymbol method
+    c.resetAllAttrs(tree)
+    c.typeCheck(tree).asInstanceOf[DefDef]
   }
-
-  def functionToLocalMethod(tree: Tree): DefDef = flatten(tree) match {
-    case (f: Function) :: Nil => functionToLocalMethod(f)
-    case _                    => c.abort(c.enclosingPosition, s"Cannot find closure in $tree")
-  }
-}
-
-object Impl {
-  def mapInfix[A: c0.WeakTypeTag, B: c0.WeakTypeTag, Coll: c0.WeakTypeTag, That: c0.WeakTypeTag](c0: CtxColl[A, Coll])(f0: c0.Expr[A => B]): c0.Expr[That] = {
-    val ctx = new ContextUtil[c0.type](c0)
-    import ctx._
-    import c.universe._
-
-    val closureTree = functionToLocalMethod(f0.tree)
-    def closure     = closureTree.symbol
-
-    def isForeach         = weakTypeOf[That] =:= typeOf[Unit]
-    def newBuilder        = weakTypeOf[Coll].typeSymbol.companionSymbol.typeSignature member 'newBuilder
-    def closureDef        = c.Expr[Unit](closureTree)
-    def builderVal        = c.Expr[Unit](if (isForeach) mkUnit else ValDef(NoMods, 'buf, TypeTree(), newBuilder[B]))
-    def mkCall(arg: Tree) = c.Expr[Unit](if (isForeach) closure(arg) else ('buf dot '+=)(closure(arg)))
-    def mkResult          = c.Expr[That](if (isForeach) mkUnit else 'buf dot 'result)
-
-    def mkIndexed[Prefix](prefixTree: Tree): c.Expr[That] = {
-      val prefix = c.Expr[Prefix](prefixTree)
-      val len    = c.Expr[Int]('xs dot 'length) // might be array or indexedseq
-      val call   = mkCall('xs('i))
-
-      reify {
-        closureDef.splice
-        builderVal.splice
-        val xs = prefix.splice
-        var i  = 0
-        while (i < len.splice) {
-          call.splice
-          i += 1
-        }
-        mkResult.splice
-      }
-    }
-
-    def mkLinear(prefixTree: Tree): c.Expr[That] = {
-      val prefix    = c.Expr[Lin[A]](prefixTree)
-      val call = mkCall('these dot 'head)
-
-      reify {
-        closureDef.splice
-        builderVal.splice
-        var these = prefix.splice
-        while (!these.isEmpty) {
-          call.splice
-          these = these.tail
-        }
-        mkResult.splice
-      }
-    }
-
-    def mkTraversable(prefixTree: Tree): c.Expr[That] = {
-      val prefix = c.Expr[Traversable[A]](prefixTree)
-      val call   = mkCall('it dot 'next)
-
-      reify {
-        closureDef.splice
-        builderVal.splice
-        val it = prefix.splice.toIterator
-        while (it.hasNext)
-          call.splice
-
-        mkResult.splice
-      }
-    }
-
-    c.prefix match {
-      case ArrayPrefix(tree)       => mkIndexed[Array[A]](tree)
-      case IndexedPrefix(tree)     => mkIndexed[Ind[A]](tree)
-      case LinearPrefix(tree)      => mkLinear(tree)
-      case TraversablePrefix(tree) => mkTraversable(tree)
-      case _                       => c.abort(c.enclosingPosition, "Not a Traversable: " + collectionType)
-    }
-  }
-
-  def foreachInfix[A: c0.WeakTypeTag, Coll: c0.WeakTypeTag](c0: CtxColl[A, Coll])(f0: c0.Expr[A => Unit]): c0.Expr[Unit] =
-    mapInfix[A, Unit, Coll, Unit](c0)(f0)
 }
 
 object MacroUtil {
   def showUs[T](a: T): T = macro showUsImpl[T]
-  def showUsImpl[T](c: Context)(a: c.Expr[T]) = {
+  def showUsImpl[T](c: Ctx)(a: c.Expr[T]) = {
     Console.err.println(c.universe.show(a.tree))
     a
   }
