@@ -12,7 +12,7 @@ object MooMoo {
   def h1 = showUs(println(immutable.Traversable(1, 2, 3) macroMap (_ * 10)))
   def h2 = showUs({ immutable.Traversable(1, 2, 3) macroForeach (x => print((x * 10) + " ")); println("") })
   // TODO
-  def r1 = showUs(println(1 to 3 macroMap (_ * 10)))
+  // def r1 = showUs(println(1 to 3 macroMap (_ * 10)))
   def r2 = showUs({ 1 to 3 macroForeach (x => print((x * 10) + " ")); println("") })
 
   def main(args: Array[String]): Unit = {
