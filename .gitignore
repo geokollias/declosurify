@@ -1,3 +1,7 @@
 .cache
 *.class
 *.log
+components/base/target
+components/test/target
+project/target
+target

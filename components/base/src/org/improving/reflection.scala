@@ -1,4 +1,4 @@
-package improving
+package org.improving
 
 trait ImplicitCollectorFunction[M[_], V, R] {
   type MT

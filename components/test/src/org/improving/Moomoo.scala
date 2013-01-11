@@ -1,4 +1,4 @@
-import improving._
+import org.improving._
 import MacroUtil._
 import scala.collection.{ mutable, immutable, generic }
 

@@ -1,4 +1,6 @@
-package improving
+package org.improving
+
+import scala.languageFeature.experimental.macros
 
 // TODO: constraints on Coll
 trait InfixMacroOps[A, Coll] extends Any {

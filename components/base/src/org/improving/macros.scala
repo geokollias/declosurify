@@ -1,6 +1,7 @@
-package improving
+package org.improving
 
 import scala.collection.generic.FilterMonadic
+import scala.languageFeature.experimental.macros
 
 class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
   val u: c.universe.type = c.universe

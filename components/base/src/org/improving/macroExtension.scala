@@ -1,4 +1,4 @@
-package improving
+package org.improving
 
 import scala.annotation._
 

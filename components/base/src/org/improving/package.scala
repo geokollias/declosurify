@@ -1,8 +1,10 @@
+package org.improving
+
 import scala.reflect.macros.Context
 import scala.collection.generic._
 import scala.collection.mutable.WrappedArray
 
-package object improving {
+object `package` {
   implicit lazy val macrosFeature = scala.language.experimental.macros
 
   type ScalaAnnotation  = scala.annotation.Annotation
