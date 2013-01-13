@@ -13,7 +13,7 @@ trait ImplicitCollectorFunction[M[_], V, R] {
 }
 
 class Caller(val t: Throwable) {
-  def frames = t.getStackTrace.toList dropWhile (_.getClassName.stripSuffix("$") == "improving.Caller")
+  def frames = t.getStackTrace.toList dropWhile (_.getClassName.stripSuffix("$") == "org.improving.Caller")
   def head = frames.head
 }
 object Caller {
