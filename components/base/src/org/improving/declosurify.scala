@@ -6,7 +6,7 @@ object Declosurify {
     import ctx._
     import c.universe._
 
-    call.log[A, B, Coll, That]("f0" -> f0.tree)
+    //call.log[A, B, Coll, That]("f0" -> f0.tree)
 
     def isForeach = weakTypeOf[That] =:= typeOf[Unit]
     def mkFallbackImpl = {

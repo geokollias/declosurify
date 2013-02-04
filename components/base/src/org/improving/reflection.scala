@@ -12,13 +12,13 @@ trait ImplicitCollectorFunction[M[_], V, R] {
   def apply[T1: M, T2: M, T3: M, T4: M, T5: M](vs: V*) : R = create(List(mt[T1], mt[T2], mt[T3], mt[T4], mt[T5]), vs.toList)
 }
 
-class Caller(val t: Throwable) {
-  def frames = t.getStackTrace.toList dropWhile (_.getClassName.stripSuffix("$") == "org.improving.Caller")
-  def head = frames.head
-}
-object Caller {
-  implicit def caller: Caller = new Caller(new Throwable)
-}
+//class Caller(val t: Throwable) {
+//  def frames = t.getStackTrace.toList dropWhile (_.getClassName.stripSuffix("$") == "org.improving.Caller")
+//  def head = frames.head
+//}
+//object Caller {
+//  implicit def caller: Caller = new Caller(new Throwable)
+//}
 
 trait ReflectionSupport {
   val u: Universe
@@ -30,71 +30,72 @@ trait ReflectionSupport {
     def create(ts: List[MT], vs: List[(String, Any)]) = f(ts, vs)
   }
 
-  class CallerOps(caller: Caller) {
-    def create(ts: List[Type], vs: List[(String, Any)]): String = {
-      val v_strs = vs.toList map { case (k, v) => k + "=" + v }
-      val res = caller.head.callString(ts, v_strs)
-      println(res)
-      res
-    }
-    val log = new TypeArgFunction(create)
-  }
+//  class CallerOps(caller: Caller) {
+//    def create(ts: List[Type], vs: List[(String, Any)]): String = {
+//      val v_strs = vs.toList map { case (k, v) => k + "=" + v }
+//      val res = caller.head.callString(ts, v_strs)
+//      println(res)
+//      res
+//    }
+//    val log = new TypeArgFunction(create)
+//  }
+//
+//  def call(implicit caller: Caller) = new CallerOps(caller)
+//
+//  implicit final class ReflectStackFrame(val frame: StackTraceElement) {
+//    def isModule   = className endsWith "$"
+//    def scalaName  = if (isModule) className.init else className
+//    def clazz      = if (isModule) rootMirror.staticModule(scalaName) else rootMirror.staticClass(scalaName)
+//    def className  = frame.getClassName
+//    def methodName = frame.getMethodName
+//    def line       = frame.getLineNumber
+//    def file       = frame.getFileName
+//
+//    def classType  = clazz.typeSignature
+//    def method     = classType member (methodName: TermName) asMethod
+//    def methodType = method typeSignatureIn classType
+//    def tparams    = methodType match {
+//      case PolyType(tparams, _) => tparams
+//      case _                    => Nil
+//    }
+//    def paramss = method.paramss
+//    def params  = paramss match {
+//      case xs :: _ => xs
+//      case _       => Nil
+//    }
+//    def allParams   = paramss.flatten
+//    def tparamNames = tparams map (_.name)
+//    def paramNames  = allParams map (_.name)
+//
+//    def typeArgsString(targs: List[Any]): String = {
+//      val prepend = if (tparams.size != targs.size) "<error:mismatched params/args>" else ""
+//      prepend + (
+//        if (tparams.isEmpty) ""
+//        else (tparamNames, targs).zipped map (_ + "=" + _) mkString ("[", ", ", "]")
+//      )
+//    }
+//
+//    def mkStringMaxWidth(args: List[Any], width: Int) = {
+//      val strs = args map ("" + _)
+//      val cols = strs map (_.length) sum;
+//
+//      if (cols > width) strs.mkString("\n  ", ",\n  ", "\n")
+//      else strs mkString ", "
+//    }
+//
+//    def callString(targs: List[Type], args: List[Any]): String = {
+//      method.name + typeArgsString(targs) + "(" + mkStringMaxWidth(args, 80) + ")"
+//    }
+//
+//    override def toString = s"""
+//      |$frame
+//      |class=$clazz tpe=$classType
+//      |method=$method tpe=$methodType
+//      |tparams=$tparams
+//      |paramss=$paramss
+//    """
+//  }
 
-  def call(implicit caller: Caller) = new CallerOps(caller)
-
-  implicit final class ReflectStackFrame(val frame: StackTraceElement) {
-    def isModule   = className endsWith "$"
-    def scalaName  = if (isModule) className.init else className
-    def clazz      = if (isModule) rootMirror.staticModule(scalaName) else rootMirror.staticClass(scalaName)
-    def className  = frame.getClassName
-    def methodName = frame.getMethodName
-    def line       = frame.getLineNumber
-    def file       = frame.getFileName
-
-    def classType  = clazz.typeSignature
-    def method     = classType member (methodName: TermName) asMethod
-    def methodType = method typeSignatureIn classType
-    def tparams    = methodType match {
-      case PolyType(tparams, _) => tparams
-      case _                    => Nil
-    }
-    def paramss = method.paramss
-    def params  = paramss match {
-      case xs :: _ => xs
-      case _       => Nil
-    }
-    def allParams   = paramss.flatten
-    def tparamNames = tparams map (_.name)
-    def paramNames  = allParams map (_.name)
-
-    def typeArgsString(targs: List[Any]): String = {
-      val prepend = if (tparams.size != targs.size) "<error:mismatched params/args>" else ""
-      prepend + (
-        if (tparams.isEmpty) ""
-        else (tparamNames, targs).zipped map (_ + "=" + _) mkString ("[", ", ", "]")
-      )
-    }
-
-    def mkStringMaxWidth(args: List[Any], width: Int) = {
-      val strs = args map ("" + _)
-      val cols = strs map (_.length) sum;
-
-      if (cols > width) strs.mkString("\n  ", ",\n  ", "\n")
-      else strs mkString ", "
-    }
-
-    def callString(targs: List[Type], args: List[Any]): String = {
-      method.name + typeArgsString(targs) + "(" + mkStringMaxWidth(args, 80) + ")"
-    }
-
-    override def toString = s"""
-      |$frame
-      |class=$clazz tpe=$classType
-      |method=$method tpe=$methodType
-      |tparams=$tparams
-      |paramss=$paramss
-    """
-  }
   // Smuggled from the compiler.
   val METHOD = (1L << 6).asInstanceOf[FlagSet]
 
