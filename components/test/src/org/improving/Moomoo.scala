@@ -1,4 +1,5 @@
-import org.improving._
+package org.improving
+
 import MacroUtil._
 import scala.collection.{ mutable, immutable, generic }
 

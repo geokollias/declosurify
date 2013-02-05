@@ -9,7 +9,7 @@ object DeclosurifyBuild extends Build {
   val defaults = Defaults.defaultSettings ++ Seq(
     // scala version + resolver
     scalaVersion := scala,
-    scalaBinaryVersion := scala,
+    scalaBinaryVersion := "2.10",
     resolvers in ThisBuild += ScalaToolsSnapshots,
     // paths
     scalaSource in Compile <<= baseDirectory(_ / "src"),
@@ -24,7 +24,9 @@ object DeclosurifyBuild extends Build {
       "org.scala-lang" % "scala-reflect" % ver, 
       "org.scala-lang" % "scala-compiler" % ver
     )),
-    parallelExecution in Test := false
+    parallelExecution in Test := false,
+    //http://stackoverflow.com/questions/10472840/how-to-attach-sources-to-sbt-managed-dependencies-in-scala-ide#answer-11683728
+    com.typesafe.sbteclipse.plugin.EclipsePlugin.EclipseKeys.withSource := true
   )
 
   // we might need this later
