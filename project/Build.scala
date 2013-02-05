@@ -4,7 +4,7 @@ import Process._
 
 object DeclosurifyBuild extends Build {
 
-  val scala = "2.10.0-SNAPSHOT"
+  val scala = "2.10.1-SNAPSHOT"
 
   val defaults = Defaults.defaultSettings ++ Seq(
     // scala version + resolver
