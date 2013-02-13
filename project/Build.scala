@@ -26,7 +26,11 @@ object DeclosurifyBuild extends Build {
     )),
     parallelExecution in Test := false,
     //http://stackoverflow.com/questions/10472840/how-to-attach-sources-to-sbt-managed-dependencies-in-scala-ide#answer-11683728
-    com.typesafe.sbteclipse.plugin.EclipsePlugin.EclipseKeys.withSource := true
+    com.typesafe.sbteclipse.plugin.EclipsePlugin.EclipseKeys.withSource := true,
+    
+    resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+    libraryDependencies += "com.github.axel22" %% "scalameter" % "0.2",
+    testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
   )
 
   // we might need this later
