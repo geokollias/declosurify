@@ -1,7 +1,5 @@
-package org.improving
-
+import org.improving._
 import MacroUtil._
-import org.improving.InlinedList
 import org.scalameter.api._
 
 
@@ -23,9 +21,10 @@ import org.scalameter.api._
 //}
 
 object InlinedListBenchmark {
- def f1 = showUs(println(List(1, 2, 3) macroMap (_ * 10)))
-//  def f1 = showUs(println(InlinedList(1, 2, 3) map (_ * 10)))
-  
+  // def f1 = showUs(println(List(1, 2, 3) macroMap (_ * 10)))
+  def f1 = InlinedList(1, 2, 3) map ((x: Int) => x * 10)
+  def f2 = List(1, 2, 3) macroMap (_ * 10)
+
   def main(args: Array[String]): Unit = {
     f1
   }
@@ -43,7 +42,7 @@ object InlinedListBenchmark {
 //[info] Parameters(size -> 6300000): 102.038292
 //[info] Parameters(size -> 9300000): 250.473788
 //[info] Parameters(size -> 12300000): 458.388883
-//[info] 
+//[info]
 //[info] Passed: : Total 0, Failed 0, Errors 0, Passed 0, Skipped 0
 //[success] Total time: 143 s, completed Feb 14, 2013 12:38:11 AM
 // VS.

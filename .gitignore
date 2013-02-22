@@ -3,6 +3,7 @@
 *.log
 .settings
 .project
+.classpath
 components/base/target
 components/test/target
 project/target

@@ -52,7 +52,11 @@ class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
       ((method.producedType, method.producedType.isDefinedWithAnnotation[macroExtension], method.producedType member 'xs))
   }
 
-  lazy val collectionType: Type = Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
+  lazy val collectionType: Type = {
+    System.err.println("collectionType: " + c.prefix.actualType + "   " + c.prefix.actualType.typeArgs)
+    //Some(c.prefix.actualType) <= this triggers changes to InlinedList but misses cbf info
+    Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
+  }
   lazy val elementType: Type    = Some(c.prefix.actualType.typeArgs) collect { case elem :: _ :: Nil => elem }
 
   object ArrayPrefix {
@@ -139,7 +143,7 @@ class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
 object MacroUtil {
   def showUs[T](a: T): T = macro showUsImpl[T]
   def showUsImpl[T](c: Ctx)(a: c.Expr[T]) = {
-    Console.err.println(c.universe.show(a.tree))
+    System.err.println(c.universe.show(a.tree))
     a
   }
 }

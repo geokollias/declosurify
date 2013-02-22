@@ -6,8 +6,6 @@ object Declosurify {
     import ctx._
     import c.universe._
 
-    call.log[A, B, Coll, That]("f0" -> f0.tree)
-
     def isForeach = weakTypeOf[That] =:= typeOf[Unit]
     def mkFallbackImpl = {
       val name: TermName = if (isForeach) "foreachImpl" else "map"
@@ -21,13 +19,25 @@ object Declosurify {
       case (f: Function) :: _ => f
       case _                  => null
     }
+
     val useFallback = (
-         ( fnTree == null)
-      || ( c.enclosingMethod == null )
+         ( fnTree == null)             // you didn't match a Function
+      || ( c.enclosingMethod == null ) // if this is not within a method (in the constructor OR a default param)
+                                       // def foo(i: Int = (List(1,2,3) macroMap (_ + 1)).head) = ??? <= no enclosingMethod
       || ( fnTree exists { case Return(_) => true case _ => false } )
+                                       // List(1,2,3).map((x: Int) => if (x == 2) return "Found it!" else x + 1)
+                                       // try {
+                                       //   List(1,2,3).map((x: Int) => if (x == 2) throw new NonLocalReturn("Found it!") else x + 1)
+                                       // } catch {
+                                       //   case e: NonLocalReturn => ...
+                                       // }
     )
-    if (useFallback)
+
+    if (useFallback) {
+      System.err.println("Using fallback...")
       return mkFallbackImpl
+    } else
+      System.err.println("Not using fallback...")
 
     val closureTree = functionToLocalMethod(fnTree)
 
@@ -91,18 +101,23 @@ object Declosurify {
       }
     }
 
-    val resExpr = c.prefix match {
+    val resExpr = c.prefix /* InlineList(1,2,3) */ match {
       case ArrayPrefix(tree)       => mkIndexed[Array[A]](tree)
       case IndexedPrefix(tree)     => mkIndexed[Ind[A]](tree)
       case LinearPrefix(tree)      => mkLinear(tree)
       case TraversablePrefix(tree) => mkTraversable(tree)
-      case _                       => mkFallbackImpl
+      case _                       => mkFallbackImpl // <= here
     }
 
-    flatStats.init match {
+    val tree = flatStats.init match {
       case Nil   => resExpr
       case stats => c.Expr[That](Block(stats, resExpr.tree))
     }
+
+    System.err.println("final result: " + resExpr)
+    System.err.println("final result: " + tree.tree)
+
+    tree
   }
 
   def foreachInfix[A: c0.WeakTypeTag, Coll: c0.WeakTypeTag](c0: CtxColl[A, Coll])(f0: c0.Expr[A => Any]): c0.Expr[Unit] =
