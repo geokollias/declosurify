@@ -49,6 +49,7 @@ object Declosurify {
         val xs = prefix.splice
         var i  = 0
         while (i < len.splice) {
+          println("while 1...")
           call.splice
           i += 1
         }
@@ -65,6 +66,7 @@ object Declosurify {
         builderVal.splice
         var these = prefix.splice
         while (!these.isEmpty) {
+          println("while 2...")
           call.splice
           these = these.tail
         }
@@ -80,8 +82,10 @@ object Declosurify {
         closureDef.splice
         builderVal.splice
         val it = prefix.splice.toIterator
-        while (it.hasNext)
+        while (it.hasNext) {
+          println("while 3...")
           call.splice
+        }
 
         mkResult.splice
       }

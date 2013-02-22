@@ -1,22 +1,33 @@
 package org.improving
 
+import MacroUtil._
+import org.improving.InlinedList
 import org.scalameter.api._
 
 
-object InlinedBenchmark extends PerformanceTest.Quickbenchmark {
-  val sizes = Gen.range("size")(300000, 15000000, 3000000)
+//object InlinedBenchmark extends PerformanceTest.Quickbenchmark {
+//  val sizes = Gen.range("size")(300000, 15000000, 3000000)
+//
+//  val ranges = for {
+//    size <- sizes
+//  } yield 0 until size
+//
+////  performance of "InlinedList" in {
+//  performance of "List" in {
+//    measure method "map" in {
+//      using(ranges) in {
+//        r => r.map(_ + 1)
+//      }
+//    }
+//  }
+//}
 
-  val ranges = for {
-    size <- sizes
-  } yield 0 until size
-
-//  performance of "InlinedList" in {
-  performance of "List" in {
-    measure method "map" in {
-      using(ranges) in {
-        r => r.map(_ + 1)
-      }
-    }
+object InlinedListBenchmark {
+ def f1 = showUs(println(List(1, 2, 3) macroMap (_ * 10)))
+//  def f1 = showUs(println(InlinedList(1, 2, 3) map (_ * 10)))
+  
+  def main(args: Array[String]): Unit = {
+    f1
   }
 }
 
