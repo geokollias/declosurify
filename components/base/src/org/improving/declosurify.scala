@@ -6,14 +6,16 @@ object Declosurify {
     import ctx._
     import c.universe._
 
-    call.log[A, B, Coll, That]("f0" -> f0.tree)
+//    call.log[A, B, Coll, That]("f0" -> f0.tree)	// only for debugging purposes
 
     def isForeach = weakTypeOf[That] =:= typeOf[Unit]
     def mkFallbackImpl = {
       val name: TermName = if (isForeach) "foreachImpl" else "map"
       val pre = Select(c.prefix.tree, "xs": TermName)
 
-      c.Expr[That](Apply(Select(pre, name), f0.tree :: Nil))
+      val fallbacktree = c.Expr[That](Apply(Select(pre, name), f0.tree :: Nil))
+      System.err.println("fallbacking... tree = " + fallbacktree)
+      fallbacktree	// e.g. scala.this.Predef.println(improving.this.InlinedList.plain2inlinedList[Int](InlinedList.apply[Int](1, 2, 3).xs.map[Int, List[Int]](((x: Int) => x.*(10)))(immutable.this.List.canBuildFrom[Int])))
     }
 
     val flatStats = flatten(f0.tree)
@@ -28,8 +30,12 @@ object Declosurify {
     )
     if (useFallback)
       return mkFallbackImpl
+    
+    System.err.println("flatStats = " + flatStats)
+    System.err.println("fnTree = " + fnTree)
 
     val closureTree = functionToLocalMethod(fnTree)
+    System.err.println("closureTree = " + closureTree)
 
     def closure           = closureTree.symbol
     def newBuilder        = weakTypeOf[Coll].typeSymbol.companionSymbol.typeSignature member 'newBuilder
@@ -87,6 +93,7 @@ object Declosurify {
       }
     }
 
+    System.err.println("c.prefix = " + c.prefix)
     val resExpr = c.prefix match {
       case ArrayPrefix(tree)       => mkIndexed[Array[A]](tree)
       case IndexedPrefix(tree)     => mkIndexed[Ind[A]](tree)
@@ -94,11 +101,15 @@ object Declosurify {
       case TraversablePrefix(tree) => mkTraversable(tree)
       case _                       => mkFallbackImpl
     }
+    System.err.println("resExpr = " + resExpr)
 
-    flatStats.init match {
+    val tree = flatStats.init match {
       case Nil   => resExpr
       case stats => c.Expr[That](Block(stats, resExpr.tree))
     }
+    System.err.println("final result tree = " + tree)
+    
+    tree
   }
 
   def foreachInfix[A: c0.WeakTypeTag, Coll: c0.WeakTypeTag](c0: CtxColl[A, Coll])(f0: c0.Expr[A => Any]): c0.Expr[Unit] =

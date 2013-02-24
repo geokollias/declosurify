@@ -52,24 +52,39 @@ class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
       ((method.producedType, method.producedType.isDefinedWithAnnotation[macroExtension], method.producedType member 'xs))
   }
 
-  lazy val collectionType: Type = Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
+  lazy val collectionType: Type = {
+    System.err.println("c.prefix.actualType = " + c.prefix.actualType)
+    System.err.println("c.prefix.actualType.typeArgs = " + c.prefix.actualType.typeArgs)
+//    val retCollectionType = Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
+    val retCollectionType = Some(c.prefix.actualType)
+    System.err.println("retCollectionType = " + retCollectionType)
+    retCollectionType
+  }
   lazy val elementType: Type    = Some(c.prefix.actualType.typeArgs) collect { case elem :: _ :: Nil => elem }
 
   object ArrayPrefix {
-    def unapply[T](prefix: c.Expr[T]): Option[Tree] =
+    def unapply[T](prefix: c.Expr[T]): Option[Tree] = {
+      System.err.println("is ArrayPrefix?")
       if (collectionType.isArrayType) Some(prefixCollectionTree) else None
+    }
   }
   object LinearPrefix {
-    def unapply[T](prefix: c.Expr[T]): Option[Tree] =
+    def unapply[T](prefix: c.Expr[T]): Option[Tree] = {
+      System.err.println("is LinearPrefix?")
       if (collectionType.isLinearSeqType) Some(prefixCollectionTree) else None
+    }
   }
   object IndexedPrefix {
-    def unapply[T](prefix: c.Expr[T]): Option[Tree] =
+    def unapply[T](prefix: c.Expr[T]): Option[Tree] = {
+      System.err.println("is IndexedPrefix?")
       if (collectionType.isIndexedSeqType) Some(prefixCollectionTree) else None
+    }
   }
   object TraversablePrefix {
-    def unapply[T](prefix: c.Expr[T]): Option[Tree] =
+    def unapply[T](prefix: c.Expr[T]): Option[Tree] = {
+      System.err.println("is TraversablePrefix?")
       if (collectionType.isTraversableType) Some(Select(prefixCollectionTree, 'toIterator)) else None
+    }
   }
 
   def prefixCollection[Coll1] = c.Expr[Coll1](prefixCollectionTree)
@@ -139,7 +154,8 @@ class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
 object MacroUtil {
   def showUs[T](a: T): T = macro showUsImpl[T]
   def showUsImpl[T](c: Ctx)(a: c.Expr[T]) = {
-    Console.err.println(c.universe.show(a.tree))
+//    Console.err.println(c.universe.show(a.tree))
+    System.err.println("showUs: " + c.universe.show(a.tree))
     a
   }
 }

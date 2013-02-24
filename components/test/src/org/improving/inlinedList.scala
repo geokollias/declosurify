@@ -1,10 +1,15 @@
 package org.improving
 
+import scala.collection.immutable.LinearSeq
 
-class InlinedList[+A](val xs: List[A]) {
-  def toList: List[A] = xs
+
+@macroExtension
+class InlinedList[+A](val xs: List[A]) extends LinearSeq[A] {
+  override def toList: List[A] = xs
   def map[B](f0: A => B): InlinedList[B] = macro Declosurify.mapInfix[A, B, InlinedList[A], InlinedList[B]]
   override def toString = xs.toString
+  override def length = xs.length
+  override def apply(n: Int) = xs.apply(n)
 }
 
 object InlinedList {
