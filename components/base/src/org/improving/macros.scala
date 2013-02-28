@@ -7,7 +7,7 @@ class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
   val u: c.universe.type = c.universe
   import u._
 
-  def dumpContext(): Unit = println(
+  def dumpContext(): Unit = System.err.println(
     s"""
       macroApplication   =${c.macroApplication}
       enclosingMacros    =${c.enclosingMacros}
@@ -55,8 +55,8 @@ class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
   lazy val collectionType: Type = {
     System.err.println("c.prefix.actualType = " + c.prefix.actualType)
     System.err.println("c.prefix.actualType.typeArgs = " + c.prefix.actualType.typeArgs)
-//    val retCollectionType = Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
-    val retCollectionType = Some(c.prefix.actualType)
+    val retCollectionType = Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
+//    val retCollectionType = Some(c.prefix.actualType)
     System.err.println("retCollectionType = " + retCollectionType)
     retCollectionType
   }
