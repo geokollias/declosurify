@@ -6,7 +6,7 @@ object Declosurify {
     import ctx._
     import c.universe._
 
-//    call.log[A, B, Coll, That]("f0" -> f0.tree)	// only for debugging purposes
+    call.log[A, B, Coll, That]("f0" -> f0.tree)	// only for debugging purposes
 
     def isForeach = weakTypeOf[That] =:= typeOf[Unit]
     def mkFallbackImpl = {
@@ -31,11 +31,11 @@ object Declosurify {
     if (useFallback)
       return mkFallbackImpl
     
-    System.err.println("flatStats = " + flatStats)
-    System.err.println("fnTree = " + fnTree)
+//    System.err.println("flatStats = " + flatStats)
+//    System.err.println("fnTree = " + fnTree)
 
     val closureTree = functionToLocalMethod(fnTree)
-    System.err.println("closureTree = " + closureTree)
+//    System.err.println("closureTree = " + closureTree)
 
     def closure           = closureTree.symbol
     def newBuilder        = weakTypeOf[Coll].typeSymbol.companionSymbol.typeSignature member 'newBuilder
@@ -55,6 +55,7 @@ object Declosurify {
         val xs = prefix.splice
         var i  = 0
         while (i < len.splice) {
+//          System.err.println("in indexed while...")
           call.splice
           i += 1
         }
@@ -71,6 +72,7 @@ object Declosurify {
         builderVal.splice
         var these = prefix.splice
         while (!these.isEmpty) {
+//          System.err.println("in linear while...")
           call.splice
           these = these.tail
         }
@@ -86,14 +88,16 @@ object Declosurify {
         closureDef.splice
         builderVal.splice
         val it = prefix.splice.toIterator
-        while (it.hasNext)
+        while (it.hasNext) {
+//          System.err.println("in traversable while...")
           call.splice
+        }
 
         mkResult.splice
       }
     }
 
-    System.err.println("c.prefix = " + c.prefix)
+//    System.err.println("c.prefix = " + c.prefix)
     val resExpr = c.prefix match {
       case ArrayPrefix(tree)       => mkIndexed[Array[A]](tree)
       case IndexedPrefix(tree)     => mkIndexed[Ind[A]](tree)
@@ -101,13 +105,13 @@ object Declosurify {
       case TraversablePrefix(tree) => mkTraversable(tree)
       case _                       => mkFallbackImpl
     }
-    System.err.println("resExpr = " + resExpr)
+//    System.err.println("resExpr = " + resExpr)
 
     val tree = flatStats.init match {
       case Nil   => resExpr
       case stats => c.Expr[That](Block(stats, resExpr.tree))
     }
-    System.err.println("final result tree = " + tree)
+//    System.err.println("final result tree = " + tree)
     
     tree
   }

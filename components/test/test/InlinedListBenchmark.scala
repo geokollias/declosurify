@@ -17,7 +17,8 @@ object InlinedBenchmark extends PerformanceTest {
   def reporter = new reporting.LoggingReporter
   def persistor = Persistor.None
   
-  val sizes = Gen.range("size")(1000000, 2000000, 500000)
+  val sizes = Gen.range("size")(1000000, 3000000, 500000)
+//  val sizes = Gen.range("size")(1, 10, 2)
   val lists = for (sz <- sizes) yield (0 until sz).toList
 
   performance of "List" config (
@@ -26,14 +27,17 @@ object InlinedBenchmark extends PerformanceTest {
       exec.benchRuns -> 36,
       exec.independentSamples -> 6
     ) in {
-    measure method "map" in {
-      using(lists) in {
-        r => r.map(_ + 1)
-      }
-    }
     measure method "macroMap" in { // test group
       using(lists) in {
-        r => r.macroMap(_ + 1) // curve
+        def f(r: List[Int]) = r.macroMap(_ + 1)
+        r => f(r) // curve
+      }
+    }
+    measure method "map" in {
+      using(lists) in {
+        def f(r: List[Int]) = r.map(_ + 1)
+        r => f(r)
+//        r => r.map(_ + 1)
       }
     }
   }
@@ -48,15 +52,34 @@ object InlinedBenchmark extends PerformanceTest {
 //  }
 //}
 
-//::Benchmark List.macroMap::
-//Parameters(size -> 1000000): 9.907533
-//Parameters(size -> 1500000): 16.174634
-//Parameters(size -> 2000000): 21.244165
-//Parameters(size -> 2500000): 26.108901
-//
-//::Benchmark List.map::
-//Parameters(size -> 1000000): 11.179443
-//Parameters(size -> 1500000): 20.099707
-//Parameters(size -> 2000000): 23.935674
-//Parameters(size -> 2500000): 31.500315
+//[info] ::Benchmark List.macroMap::
+//[info] cores: 8
+//[info] hostname: geokollias-trbx
+//[info] jvm-name: Java HotSpot(TM) 64-Bit Server VM
+//[info] jvm-vendor: Oracle Corporation
+//[info] jvm-version: 23.7-b01
+//[info] os-arch: amd64
+//[info] os-name: Linux
+//[info] Parameters(size -> 1000000): 16.09330608333333
+//[info] Parameters(size -> 1500000): 28.70362186111111
+//[info] Parameters(size -> 2000000): 30.522613888888884
+//[info] Parameters(size -> 2500000): 35.884936972222214
+//[info] Parameters(size -> 3000000): 43.65284405555556
+//[info] 
+//[info] ::Benchmark List.map::
+//[info] cores: 8
+//[info] hostname: geokollias-trbx
+//[info] jvm-name: Java HotSpot(TM) 64-Bit Server VM
+//[info] jvm-vendor: Oracle Corporation
+//[info] jvm-version: 23.7-b01
+//[info] os-arch: amd64
+//[info] os-name: Linux
+//[info] Parameters(size -> 1000000): 24.625723083333334
+//[info] Parameters(size -> 1500000): 36.49562130555555
+//[info] Parameters(size -> 2000000): 46.6049605
+//[info] Parameters(size -> 2500000): 54.616660444444435
+//[info] Parameters(size -> 3000000): 68.63785094444444
+//[info] 
+//[info] Passed: : Total 0, Failed 0, Errors 0, Passed 0, Skipped 0
+//[success] Total time: 505 s, completed Feb 28, 2013 9:13:23 PM
 
