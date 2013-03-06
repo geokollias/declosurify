@@ -27,12 +27,12 @@ object InlinedBenchmark extends PerformanceTest {
       exec.benchRuns -> 36,
       exec.independentSamples -> 6
     ) in {
-    measure method "macroMap" in { // test group
-      using(lists) in {
-        def f(r: List[Int]) = r.macroMap(_ + 1)
-        r => f(r) // curve
-      }
-    }
+//    measure method "macroMap" in { // test group
+//      using(lists) in {
+//        def f(r: List[Int]) = r.macroMap(_ + 1)
+//        r => f(r) // curve
+//      }
+//    }
     measure method "map" in {
       using(lists) in {
         def f(r: List[Int]) = r.map(_ + 1)

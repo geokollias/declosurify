@@ -18,7 +18,7 @@ import scala.collection.{ mutable, immutable, generic }
 //
 //  def main(args: Array[String]): Unit = {
 //    a1 ; a2
-//    f1 ; f2
+//    f1 //; f2
 //    g1 ; g2
 //    h1 ; h2
 //

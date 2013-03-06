@@ -55,8 +55,8 @@ class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
   lazy val collectionType: Type = {
     System.err.println("c.prefix.actualType = " + c.prefix.actualType)
     System.err.println("c.prefix.actualType.typeArgs = " + c.prefix.actualType.typeArgs)
-    val retCollectionType = Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
-//    val retCollectionType = Some(c.prefix.actualType)
+//    val retCollectionType = Some(c.prefix.actualType.typeArgs) collect { case _ :: coll :: Nil => coll }
+    val retCollectionType = Some(c.prefix.actualType)
     System.err.println("retCollectionType = " + retCollectionType)
     retCollectionType
   }
@@ -100,7 +100,8 @@ class MacroSupport[C <: Ctx](final val c: C) extends ReflectionSupport {
     )
     c.prefix.tree match {
       case Apply(sel, arg :: Nil) if isMacroOpsImplicit(sel.symbol) => arg
-      case _                                                        => Apply(c.prefix.tree, Ident('xs) :: Nil)
+      case _                                                         => c.prefix.tree
+//      case _                                                        => Apply(c.prefix.tree, Ident('xs) :: Nil)
     }
   }
   implicit def scalaSymbolToInvokeOps(x: scala.Symbol): InvokeOps = treeToInvokeOps(Ident(x.name: TermName))
